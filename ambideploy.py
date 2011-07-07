@@ -92,12 +92,13 @@ def collectstatic():
     raise NotImplementedError
 
 
-def upload_configuration(filename, destination):
+def upload_configuration(filename, destination, template_dir=None):
+    tmpldir = template_dir or here('conf')
     upload_template(filename,
                     destination.format(**env),
                     use_jinja=True,
                     context=env,
-                    template_dir=here('conf'),
+                    template_dir=tmpldir,
                     use_sudo=True)
 
 
