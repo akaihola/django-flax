@@ -208,3 +208,9 @@ def update():
 
 def syncdb():
     raise NotImplementedError
+
+
+@task
+def migrate():
+    with virtualenv():
+        run('manage migrate')
