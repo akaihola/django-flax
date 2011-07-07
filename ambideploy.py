@@ -76,6 +76,7 @@ def create_db():
     sudo('createdb {db_name} -O {db_user}'.format(**env), user='postgres')
 
 
+@task
 def clone_db():
     run('sudo -u postgres pg_dump -O {db_name}'
         ' >{project_root}/db.sql'.format(**env))
