@@ -31,7 +31,7 @@ class Pip(object):
         with virtualenv():
             self.run('install'
                      ' --download-cache=~/.pip/cache'
-                     '{0}'.format(args))
+                     ' {0}'.format(args))
 
     def install_repo(self, repository):
         self.install(' -I -e {0}'.format(repository))
