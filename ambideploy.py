@@ -94,12 +94,15 @@ def collectstatic():
         run('manage collectstatic')
 
 
-def upload_configuration(filename, destination, template_dir=None):
+def upload_configuration(filename,
+                         destination,
+                         template_dir=None,
+                         context=None):
     tmpldir = template_dir or here('conf')
     upload_template(filename,
                     destination.format(**env),
                     use_jinja=True,
-                    context=env,
+                    context=context or env,
                     template_dir=tmpldir,
                     use_sudo=True)
 
