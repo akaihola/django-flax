@@ -88,8 +88,10 @@ def clone_db():
     local('psql -U {db_user} {db_name} <db.sql'.format(**env))
 
 
+@task
 def collectstatic():
-    raise NotImplementedError
+    with virtualenv():
+        run('manage collectstatic')
 
 
 def upload_configuration(filename, destination, template_dir=None):
