@@ -232,8 +232,10 @@ def update():
     restart_django()
 
 
+@task
 def syncdb():
-    raise NotImplementedError
+    with virtualenv():
+        run('manage syncdb')
 
 
 @task
