@@ -94,7 +94,7 @@ def clone_db():
 @task
 def collectstatic():
     with virtualenv():
-        run('manage collectstatic')
+        run('manage collectstatic --noinput')
 
 
 def upload_configuration(filename,
