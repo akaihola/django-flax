@@ -36,6 +36,9 @@ class Pip(object):
     def install_repo(self, repository):
         self.install(' -I -e {0}'.format(repository))
 
+    def update_repo(self, repository):
+        self.install(' -U -e {0}'.format(repository))
+
     def update_requirements(self, requirements_filepath):
         self.install('-U -r {0}'.format(requirements_filepath))
 
