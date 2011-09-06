@@ -217,6 +217,16 @@ def update_python_packages():
 
 
 @task
+def update_code():
+    """Update main project code only, restart Django
+
+    Doesn't update any dependencies
+    """
+    pip.update_repo('git+{repository}#egg={project_name}\n'.format(**env))
+    restart_django()
+
+
+@task
 def update():
     update_python_packages()
     restart_django()
