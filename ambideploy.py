@@ -82,8 +82,8 @@ def create_db():
 @task
 def clone_db():
     run('sudo -u postgres pg_dump -O {db_name}'
-        ' >{project_root}/db.sql'.format(**env))
-    local('rsync {host}:{project_root}/db.sql ./'.format(**env))
+        ' >{site_root}/db.sql'.format(**env))
+    local('rsync {host}:{site_root}/db.sql ./'.format(**env))
     with settings(warn_only=True):
         local('dropdb {db_name}'.format(**env))
         local('createuser -dRS {db_user}'.format(**env))
