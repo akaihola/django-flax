@@ -117,7 +117,7 @@ def configure_nginx():
     sudo('ln -sf'
          ' /etc/nginx/sites-available/{project_name}'
          ' /etc/nginx/sites-enabled/'.format(**env))
-    for site in env.media_sites:
+    for site in getattr(env, 'media_sites', ()):
         site['project_name'] = env.project_name
         upload_configuration('nginx-media.conf',
                              '/etc/nginx/sites-available/{name}'.format(**site),
