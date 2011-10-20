@@ -241,4 +241,4 @@ def syncdb():
 @task
 def migrate():
     with virtualenv():
-        run('manage migrate')
+        run('manage migrate --settings={django_settings_module}'.format(**env))
