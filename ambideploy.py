@@ -235,7 +235,7 @@ def update():
 @task
 def syncdb():
     with virtualenv():
-        run('manage syncdb')
+        run('manage syncdb --settings={django_settings_module}'.format(**env))
 
 
 @task
