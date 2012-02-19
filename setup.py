@@ -2,7 +2,7 @@ from setuptools import setup
 
 
 setup(
-    name = "ambideploy",
+    name = "flax",
     version = "0.1",
-    modules = ['ambideploy'],
+    modules = ['flax'],
 )
