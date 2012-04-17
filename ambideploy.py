@@ -216,7 +216,11 @@ def update_python_packages():
     """Update main project repository and its Python dependencies"""
     with NamedTemporaryFile() as tmp:
         tmp.file.write(open('requirements/production.txt').read())
-        tmp.file.write('-e git+{repository}#egg={project_name}\n'.format(**env))
+        tmp.file.write('-e '
+                       'git+'
+                       '{repository}'
+                       '@{branch}'
+                       '#egg={project_name}\n'.format(**env))
         tmp.file.flush()
         remote_name = (
             '/tmp/{project_name}.requirements.production.txt'.format(**env))
@@ -227,11 +231,37 @@ def update_python_packages():
 
 @task
 def update_code():
+    """Update and install main project code only, restart Django
+
+    Doesn't update any dependencies.
+
+    This works for installations where the project code is installed into the
+    virtualenv.  This is done with::
+
+        pip install -U -e <repository>
+
+    """
+    pip.update_repo('git+'
+                    '{repository}'
+                    '@{branch}'
+                    '#egg={project_name}\n'.format(**env))
+    restart_django()
+
+
+@task
+def update_code_checkout():
     """Update main project code only, restart Django
 
-    Doesn't update any dependencies
+    Doesn't update any dependencies.
+
+    This works for direct checkouts from a project repository when the code is
+    *not* installed into the virtualenv.  The update is done with::
+
+        git pull
+
     """
-    pip.update_repo('git+{repository}#egg={project_name}\n'.format(**env))
+    with virtualenv():
+        run('git pull')
     restart_django()
 
 
