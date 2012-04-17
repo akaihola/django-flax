@@ -94,7 +94,9 @@ def clone_db():
 @task
 def collectstatic():
     with virtualenv():
-        run('manage collectstatic --noinput')
+        run('manage collectstatic'
+            ' --noinput'
+            ' --settings={django_settings_module}'.format(**env))
 
 
 def upload_configuration(filename,
