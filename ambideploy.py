@@ -184,7 +184,14 @@ def restart_django():
     """Restart Django processes"""
     # use full path to prevent password prompt if /usr/bin/supervisorctl is
     # specifically allowed in /etc/sudoers
-    sudo('/usr/bin/supervisorctl restart {project_name}'.format(**env))
+    if env.webserver == 'gunicorn' and env.process_control == 'supervisor':
+        sudo('/usr/bin/supervisorctl restart {project_name}'.format(**env))
+    elif env.webserver == 'apache' and env.process_control == 'sysvinit':
+        sudo('/etc/init.d/apache2 restart')
+    else:
+        raise NotImplementedError('Unknown web server ({webserver})'
+                                  ' and process controller ({process_control})'
+                                  ' combination')
 
 
 @_contextmanager
