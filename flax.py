@@ -83,7 +83,7 @@ def create_db():
 def clone_db():
     run('sudo -u postgres pg_dump -O {db_name}'
         ' >{site_root}/db.sql'.format(**env))
-    local('rsync {host}:{site_root}/db.sql ./'.format(**env))
+    local('rsync -z {host}:{site_root}/db.sql ./'.format(**env))
     with settings(warn_only=True):
         local('dropdb {db_name}'.format(**env))
         local('createuser -dRS {db_user}'.format(**env))
@@ -161,11 +161,13 @@ def install_django():
     raise NotImplementedError
 
 
+@task
 def create_project_root():
     sudo('mkdir -p {project_root}'.format(**env))
     sudo('chown {user}.{user} {project_root}'.format(**env))
 
 
+@task
 def create_virtualenv():
     with cd(env.project_root):
         run('virtualenv --distribute .')
@@ -184,7 +186,14 @@ def restart_django():
     """Restart Django processes"""
     # use full path to prevent password prompt if /usr/bin/supervisorctl is
     # specifically allowed in /etc/sudoers
-    sudo('/usr/bin/supervisorctl restart {project_name}'.format(**env))
+    if env.webserver == 'gunicorn' and env.process_control == 'supervisor':
+        sudo('/usr/bin/supervisorctl restart {project_name}'.format(**env))
+    elif env.webserver == 'apache' and env.process_control == 'sysvinit':
+        sudo('/etc/init.d/apache2 restart')
+    else:
+        raise NotImplementedError('Unknown web server ({webserver})'
+                                  ' and process controller ({process_control})'
+                                  ' combination')
 
 
 @_contextmanager
@@ -209,7 +218,11 @@ def update_python_packages():
     """Update main project repository and its Python dependencies"""
     with NamedTemporaryFile() as tmp:
         tmp.file.write(open('requirements/production.txt').read())
-        tmp.file.write('-e git+{repository}#egg={project_name}\n'.format(**env))
+        tmp.file.write('-e '
+                       'git+'
+                       '{repository}'
+                       '@{branch}'
+                       '#egg={project_name}\n'.format(**env))
         tmp.file.flush()
         remote_name = (
             '/tmp/{project_name}.requirements.production.txt'.format(**env))
@@ -220,11 +233,37 @@ def update_python_packages():
 
 @task
 def update_code():
+    """Update and install main project code only, restart Django
+
+    Doesn't update any dependencies.
+
+    This works for installations where the project code is installed into the
+    virtualenv.  This is done with::
+
+        pip install -U -e <repository>
+
+    """
+    pip.update_repo('git+'
+                    '{repository}'
+                    '@{branch}'
+                    '#egg={project_name}\n'.format(**env))
+    restart_django()
+
+
+@task
+def update_code_checkout():
     """Update main project code only, restart Django
 
-    Doesn't update any dependencies
+    Doesn't update any dependencies.
+
+    This works for direct checkouts from a project repository when the code is
+    *not* installed into the virtualenv.  The update is done with::
+
+        git pull
+
     """
-    pip.update_repo('git+{repository}#egg={project_name}\n'.format(**env))
+    with virtualenv():
+        run('git pull')
     restart_django()
 
 
