@@ -159,11 +159,13 @@ def install_django():
     raise NotImplementedError
 
 
+@task
 def create_project_root():
     sudo('mkdir -p {project_root}'.format(**env))
     sudo('chown {user}.{user} {project_root}'.format(**env))
 
 
+@task
 def create_virtualenv():
     with cd(env.project_root):
         run('virtualenv --distribute .')
