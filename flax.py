@@ -220,7 +220,7 @@ def update_python_packages():
         tmp.file.write(open('requirements/production.txt').read())
         tmp.file.write('-e '
                        'git+'
-                       '{repository}'
+                       'ssh://{repository}'
                        '@{branch}'
                        '#egg={project_name}\n'.format(**env))
         tmp.file.flush()
