@@ -137,7 +137,8 @@ def configure_supervisor():
     logdir = '/var/log/www/{project_name}'.format(**env)
     sudo('mkdir -p {0}'.format(logdir))
     sudo('chown www-data {0}'.format(logdir))
-    sudo('service supervisor restart')
+    with settings(warn_only=True):
+        sudo('supervisorctl reload')
 
 
 def get_roles():
