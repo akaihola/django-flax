@@ -245,7 +245,7 @@ def update_code():
 
     """
     pip.update_repo('git+'
-                    '{repository}'
+                    'ssh://{repository}'
                     '@{branch}'
                     '#egg={project_name}\n'.format(**env))
     restart_django()
