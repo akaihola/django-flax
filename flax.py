@@ -188,7 +188,8 @@ def restart_django():
     # use full path to prevent password prompt if /usr/bin/supervisorctl is
     # specifically allowed in /etc/sudoers
     if env.webserver == 'gunicorn' and env.process_control == 'supervisor':
-        sudo('/usr/bin/supervisorctl restart {project_name}'.format(**env))
+        sudo('/usr/bin/supervisorctl restart {project_name}'.format(**env),
+             shell=False)
     elif env.webserver == 'apache' and env.process_control == 'sysvinit':
         sudo('/etc/init.d/apache2 restart')
     else:
