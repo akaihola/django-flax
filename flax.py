@@ -281,11 +281,13 @@ def update():
 
 @task
 def syncdb():
-    with virtualenv():
-        run('manage syncdb --settings={django_settings_module}'.format(**env))
+    raise DeprecationWarning("Call manage('syncdb') or "
+                             "type manage:syncdb on the command line instead")
+    manage('syncdb')
 
 
 @task
 def migrate():
-    with virtualenv():
-        run('manage migrate --settings={django_settings_module}'.format(**env))
+    raise DeprecationWarning("Call manage('migrate') or "
+                             "type manage:migrate on the command line instead")
+    manage('migrate')
