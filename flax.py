@@ -59,6 +59,7 @@ pip = Pip()
 def bootstrap():
     install_debs()
     install_project()
+    configure_postgresql()
     configure_supervisor()
 
 
