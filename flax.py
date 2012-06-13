@@ -198,7 +198,6 @@ def install_project():
     create_project_root()
     create_virtualenv()
     update_python_packages()
-    raise NotImplementedError
 
 
 @task
