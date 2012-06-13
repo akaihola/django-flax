@@ -74,8 +74,10 @@ def create_db_user():
 @task
 def configure_postgresql():
     pg_hba = '/etc/postgresql/8.4/main/pg_hba.conf'
+    params = {'db_name': getattr(env, 'db_name', env.project_name),
+              'db_user': getattr(env, 'db_user', env.project_name)}
     append(pg_hba,
-           'local {db_name} {db_user} password'.format(**env),
+           'local {db_name} {db_user} password'.format(**params),
            use_sudo=True)
     comment(pg_hba,
             'local   all         all                               ident',
