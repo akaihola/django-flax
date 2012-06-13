@@ -93,6 +93,7 @@ def create_db():
 
 @task
 def clone_db():
+    """Clones the production database to the development environment"""
     run('sudo -u postgres pg_dump -O {db_name}'
         ' >{site_root}/{db_name}.sql'.format(**env))
     local('rsync -z {host}:{site_root}/{db_name}.sql ./'.format(**env))
