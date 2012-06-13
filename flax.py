@@ -237,7 +237,8 @@ def pull_repo():
 def update_python_packages():
     """Update main project repository and its Python dependencies"""
     with NamedTemporaryFile() as tmp:
-        tmp.file.write(open('requirements/production.txt').read())
+        if os.path.isfile('requirements/production.txt'):
+            tmp.file.write(open('requirements/production.txt').read())
         tmp.file.write('-e '
                        'git+'
                        'ssh://{repository}'
