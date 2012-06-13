@@ -29,6 +29,9 @@ env.debs_by_roledef = defaultdict(
                        'supervisor'])})
 
 
+env.branch = 'master'
+
+
 class Pip(object):
     def run(self, args):
         run('pip {0}'.format(args))
