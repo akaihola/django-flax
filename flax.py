@@ -7,9 +7,12 @@ from fabric.api import env, local, run, sudo, task
 from fabric.context_managers import cd, prefix, settings
 from fabric.contrib.files import append, comment, upload_template
 from fabric.operations import put
+import logging
 import os
 from tempfile import NamedTemporaryFile
 
+
+logger = logging.getLogger('flax')
 
 here = lambda *parts: os.path.join(os.path.dirname(__file__), *parts)
 
@@ -149,8 +152,12 @@ def configure_supervisor():
 
 
 def get_roles():
-    return [role for role, hosts in env.roledefs.iteritems()
-            if env.host in hosts]
+    logger.debug('finding roles for %s in %s',
+                 env.host, env.roledefs)
+    roles = [role for role, hosts in env.roledefs.iteritems()
+             if env.host in hosts]
+    logger.debug('%s roles: %s', env.host, ', '.join(roles))
+    return roles
 
 
 def get_debs():
