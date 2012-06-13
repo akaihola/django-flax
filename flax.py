@@ -1,3 +1,6 @@
+# pylint: disable=W0142
+#         (* and ** magic)
+
 from collections import defaultdict
 from contextlib import contextmanager as _contextmanager
 from fabric.api import env, local, run, sudo, task
