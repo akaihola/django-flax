@@ -1,12 +1,18 @@
+# pylint: disable=W0142
+#         (* and ** magic)
+
 from collections import defaultdict
 from contextlib import contextmanager as _contextmanager
 from fabric.api import env, local, run, sudo, task
 from fabric.context_managers import cd, prefix, settings
 from fabric.contrib.files import append, comment, upload_template
 from fabric.operations import put
+import logging
 import os
 from tempfile import NamedTemporaryFile
 
+
+logger = logging.getLogger('flax')
 
 here = lambda *parts: os.path.join(os.path.dirname(__file__), *parts)
 
@@ -24,6 +30,7 @@ env.debs_by_roledef = defaultdict(
 
 
 env.owner = 'www-data'
+env.branch = 'master'
 
 
 class Pip(object):
@@ -53,6 +60,7 @@ pip = Pip()
 def bootstrap():
     install_debs()
     install_project()
+    configure_postgresql()
     configure_supervisor()
 
 
@@ -68,8 +76,10 @@ def create_db_user():
 @task
 def configure_postgresql():
     pg_hba = '/etc/postgresql/8.4/main/pg_hba.conf'
+    params = {'db_name': getattr(env, 'db_name', env.project_name),
+              'db_user': getattr(env, 'db_user', env.project_name)}
     append(pg_hba,
-           'local {db_name} {db_user} password'.format(**env),
+           'local {db_name} {db_user} password'.format(**params),
            use_sudo=True)
     comment(pg_hba,
             'local   all         all                               ident',
@@ -84,6 +94,7 @@ def create_db():
 
 @task
 def clone_db():
+    """Clones the production database to the development environment"""
     run('sudo -u postgres pg_dump -O {db_name}'
         ' >{site_root}/{db_name}.sql'.format(**env))
     local('rsync -z {host}:{site_root}/{db_name}.sql ./'.format(**env))
@@ -150,8 +161,12 @@ def configure_supervisor():
 
 
 def get_roles():
-    return [role for role, hosts in env.roledefs.iteritems()
-            if env.host in hosts]
+    logger.debug('finding roles for %s in %s',
+                 env.host, env.roledefs)
+    roles = [role for role, hosts in env.roledefs.iteritems()
+             if env.host in hosts]
+    logger.debug('%s roles: %s', env.host, ', '.join(roles))
+    return roles
 
 
 def get_debs():
@@ -187,7 +202,6 @@ def install_project():
     create_project_root()
     create_virtualenv()
     update_python_packages()
-    raise NotImplementedError
 
 
 @task
@@ -227,7 +241,8 @@ def pull_repo():
 def update_python_packages():
     """Update main project repository and its Python dependencies"""
     with NamedTemporaryFile() as tmp:
-        tmp.file.write(open('requirements/production.txt').read())
+        if os.path.isfile('requirements/production.txt'):
+            tmp.file.write(open('requirements/production.txt').read())
         tmp.file.write('-e '
                        'git+'
                        'ssh://{repository}'
