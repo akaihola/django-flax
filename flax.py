@@ -23,6 +23,9 @@ env.debs_by_roledef = defaultdict(
                        'supervisor'])})
 
 
+env.owner = 'www-data'
+
+
 class Pip(object):
     def run(self, args):
         run('pip {0}'.format(args))
@@ -94,8 +97,9 @@ def clone_db():
 @task
 def manage(*args):
     with virtualenv():
-        run('manage {0} --settings={{django_settings_module}}'
-            .format(' '.join(args)).format(**env))
+        sudo('manage {0} --settings={{django_settings_module}}'
+             .format(' '.join(args)).format(**env),
+             user=env.owner)
 
 
 @task
