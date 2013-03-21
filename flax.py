@@ -18,20 +18,26 @@ here = lambda *parts: os.path.join(os.path.dirname(__file__), *parts)
 
 
 class FlaxEnv(object):
-    @property
-    def project_root(self):
-        if 'project_root' not in fabric_env:
-            fabric_env.project_root = '/www/{0}'.format(env.project_name)
-        return fabric_env.project_root
+    def get_default_project_root(self):
+        return self.site_root
 
-    @property
-    def virtualenv_root(self):
-        if 'virtualenv_root' not in fabric_env:
-            fabric_env.virtualenv_root = '{0}/venv'.format(self.project_root)
-        return fabric_env.virtualenv_root
+    def get_default_site_root(self):
+        return os.path.join('/www', self.project_name)
+
+    def get_default_virtualenv_root(self):
+        return '{0}/venv'.format(self.project_root)
+
+    def get_default_db_user(self):
+        return self.project_name
+
+    def get_default_db_name(self):
+        return self.project_name
 
     def __getattr__(self, key):
-        return getattr(fabric_env, key)
+        if key not in fabric_env:
+            get_default = getattr(self, 'get_default_{0}'.format(key))
+            fabric_env[key] = get_default()
+        return fabric_env[key]
 
     def __setattr__(self, key, value):
         setattr(fabric_env, key, value)
@@ -123,14 +129,16 @@ def create_db():
 @task
 def clone_db():
     """Clones the production database to the development environment"""
-    run('sudo -u postgres pg_dump -O {db_name}'
-        ' >{site_root}/{db_name}.sql'.format(**env))
-    local('rsync -z {host}:{site_root}/{db_name}.sql ./'.format(**env))
+    run('sudo -u postgres pg_dump -O {env.db_name}'
+        ' >{env.site_root}/{env.db_name}.sql'.format(env=env))
+    local('rsync -z {env.host}:{env.site_root}/{env.db_name}.sql ./'
+          .format(env=env))
     with settings(warn_only=True):
-        local('dropdb {db_name}'.format(**env))
-        local('createuser -dRS {db_user}'.format(**env))
-    local('createdb -O {db_user} {db_name}'.format(**env))
-    local('psql -U {db_user} {db_name} <{db_name}.sql'.format(**env))
+        local('dropdb {env.db_name}'.format(env=env))
+        local('createuser -dRS {env.db_user}'.format(env=env))
+    local('createdb -O {env.db_user} {env.db_name}'.format(env=env))
+    local('psql -U {env.db_user} {env.db_name} <{env.db_name}.sql'
+          .format(env=env))
 
 
 @task
