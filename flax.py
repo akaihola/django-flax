@@ -7,6 +7,7 @@ from fabric.api import env, local, run, sudo, task
 from fabric.context_managers import cd, prefix, settings
 from fabric.contrib.files import append, comment, upload_template
 from fabric.operations import put
+from fabric.utils import _AttributeDict
 import logging
 import os
 from tempfile import NamedTemporaryFile
@@ -15,6 +16,31 @@ from tempfile import NamedTemporaryFile
 logger = logging.getLogger('flax')
 
 here = lambda *parts: os.path.join(os.path.dirname(__file__), *parts)
+
+
+class _AttributeDictWithDefaults(object):
+    def __getitem__(self, key):
+        try:
+            return super(_AttributeDictWithDefaults, self).__getitem__(key)
+        except KeyError:
+            if not key.startswith('get_default_'):
+                default_getter = 'get_default_{0}'.format(key)
+                if hasattr(self, default_getter):
+                    return getattr(self, default_getter)()
+            raise KeyError(key)
+
+    def get_default_site_root(self):
+        return '/www/{0}'.format(self.project_name)
+
+    def get_default_db_name(self):
+        return self.project_name
+
+    def get_default_db_user(self):
+        return self.db_name
+
+
+env.__class__.__bases__ = ((_AttributeDictWithDefaults,)
+                           + env.__class__.__bases__)
 
 
 env.debs_by_roledef = defaultdict(
@@ -95,14 +121,22 @@ def create_db():
 @task
 def clone_db():
     """Clones the production database to the development environment"""
-    run('sudo -u postgres pg_dump -O {db_name}'
-        ' >{site_root}/{db_name}.sql'.format(**env))
-    local('rsync -z {host}:{site_root}/{db_name}.sql ./'.format(**env))
+    host_sql_path = '{site_root}/{db_name}.sql'.format(
+        site_root=env.site_root, db_name=env.db_name)
+    params = {'host': env.host,
+              'path': host_sql_path,
+              'user': env.user,
+              'db_name': env.db_name,
+              'db_user': env.db_user}
+    sudo('sudo touch {path}'.format(**params))
+    sudo('sudo chown {user} {path}'.format(**params))
+    run('sudo -u postgres pg_dump -O {db_name} >{path}'.format(**params))
+    local('rsync -z {host}:{path} ./'.format(**params))
     with settings(warn_only=True):
-        local('dropdb {db_name}'.format(**env))
-        local('createuser -dRS {db_user}'.format(**env))
-    local('createdb -O {db_user} {db_name}'.format(**env))
-    local('psql -U {db_user} {db_name} <{db_name}.sql'.format(**env))
+        local('dropdb {db_name}'.format(**params))
+        local('createuser -dRS {db_user}'.format(**params))
+    local('createdb -O {db_user} {db_name}'.format(**params))
+    local('psql -U {db_user} {db_name} <{db_name}.sql'.format(**params))
 
 
 @task
