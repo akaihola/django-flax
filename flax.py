@@ -3,7 +3,7 @@
 
 from collections import defaultdict
 from contextlib import contextmanager as _contextmanager
-from fabric.api import env, local, run, sudo, task
+from fabric.api import env as fabric_env, local, run, sudo, task
 from fabric.context_managers import cd, prefix, settings
 from fabric.contrib.files import append, comment, upload_template
 from fabric.operations import put
@@ -15,6 +15,35 @@ from tempfile import NamedTemporaryFile
 logger = logging.getLogger('flax')
 
 here = lambda *parts: os.path.join(os.path.dirname(__file__), *parts)
+
+
+class FlaxEnv(object):
+    @property
+    def project_root(self):
+        if 'project_root' not in fabric_env:
+            fabric_env.project_root = '/www/{0}'.format(env.project_name)
+        return fabric_env.project_root
+
+    @property
+    def virtualenv_root(self):
+        if 'virtualenv_root' not in fabric_env:
+            fabric_env.virtualenv_root = '{0}/venv'.format(self.project_root)
+        return fabric_env.virtualenv_root
+
+    def __getattr__(self, key):
+        return getattr(fabric_env, key)
+
+    def __setattr__(self, key, value):
+        setattr(fabric_env, key, value)
+
+    def __getitem__(self, key):
+        return fabric_env[key]
+
+    def __setitem__(self, key, value):
+        fabric_env[key] = value
+
+
+env = FlaxEnv()
 
 
 env.debs_by_roledef = defaultdict(
@@ -185,12 +214,14 @@ def install_django():
 
 @task
 def create_project_root():
-    sudo('mkdir -p {project_root}'.format(**env))
-    sudo('chown {user}.{user} {project_root}'.format(**env))
+    sudo('mkdir -p {project_root}'.format(env.project_root))
+    sudo('chown {user}.{user} {project_root}'.format(
+        user=env.user, project_root=env.project_root))
 
 
 @task
 def create_virtualenv():
+    assert env.virtualenv_root
     with cd(env.project_root):
         run('virtualenv --distribute .')
 
@@ -225,7 +256,10 @@ def virtualenv():
     From: http://stackoverflow.com/questions/1180411
     """
     with cd(env.project_root):
-        with prefix('source {project_root}/bin/activate'.format(**env)):
+        if env.virtualenv_root:
+            with prefix('source {0}/bin/activate'.format(env.virtualenv_root)):
+                yield
+        else:
             yield
 
 
