@@ -247,14 +247,17 @@ def restart_django():
     # use full path to prevent password prompt if /usr/bin/supervisorctl is
     # specifically allowed in /etc/sudoers
     if env.webserver == 'gunicorn' and env.process_control == 'supervisor':
-        sudo('/usr/bin/supervisorctl restart {project_name}'.format(**env),
+        sudo('/usr/bin/supervisorctl restart {env.project_name}'
+             .format(env=env),
              shell=False)
     elif env.webserver == 'apache' and env.process_control == 'sysvinit':
         sudo('/etc/init.d/apache2 restart')
     else:
-        raise NotImplementedError('Unknown web server ({webserver})'
-                                  ' and process controller ({process_control})'
-                                  ' combination')
+        raise NotImplementedError(
+            'Unknown web server ({env.webserver})'
+            ' and process controller ({env.process_control})'
+            ' combination'
+            .format(env=env))
 
 
 @_contextmanager
@@ -309,9 +312,9 @@ def update_code():
 
     """
     pip.update_repo('git+'
-                    'ssh://{repository}'
-                    '@{branch}'
-                    '#egg={project_name}\n'.format(**env))
+                    'ssh://{env.repository}'
+                    '@{env.branch}'
+                    '#egg={env.project_name}\n'.format(env=env))
     restart_django()
 
 
