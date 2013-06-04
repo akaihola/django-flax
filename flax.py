@@ -33,6 +33,9 @@ class FlaxEnv(object):
     def get_default_db_name(self):
         return self.project_name
 
+    def get_default_pip_args(self):
+        return ''
+
     def __getattr__(self, key):
         if key not in fabric_env:
             get_default = getattr(self, 'get_default_{0}'.format(key))
@@ -78,13 +81,16 @@ class Pip(object):
                      ' {0}'.format(args))
 
     def install_repo(self, repository):
-        self.install(' -I -e {0}'.format(repository))
+        self.install(' -I {0} -e {1}'.format(env.pip_args,
+                                             repository))
 
     def update_repo(self, repository):
-        self.install(' -U -e {0}'.format(repository))
+        self.install(' -U {0} -e {1}'.format(env.pip_args,
+                                             repository))
 
     def update_requirements(self, requirements_filepath):
-        self.install('-U -r {0}'.format(requirements_filepath))
+        self.install('-U {0} -r {1}'.format(env.pip_args,
+                                            requirements_filepath))
 
 
 pip = Pip()
@@ -290,10 +296,14 @@ def update_python_packages():
                        'git+'
                        'ssh://{repository}'
                        '@{branch}'
-                       '#egg={project_name}\n'.format(**env))
+                       '#egg={project_name}\n'.format(
+                           repository=env.repository,
+                           branch=env.branch,
+                           project_name=env.project_name))
         tmp.file.flush()
         remote_name = (
-            '/tmp/{project_name}.requirements.production.txt'.format(**env))
+            '/tmp/{project_name}.requirements.production.txt'.format(
+                project_name=env.project_name))
         put(tmp.name, remote_name)
         pip.update_requirements(remote_name)
         run('rm {0}'.format(remote_name))
