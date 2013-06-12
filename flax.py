@@ -37,6 +37,8 @@ class FlaxEnv(object):
         return ''
 
     def __getattr__(self, key):
+        if key.startswith('get_default_'):
+            raise AttributeError('No default value for {0}'.format(key[12:]))
         if key not in fabric_env:
             get_default = getattr(self, 'get_default_{0}'.format(key))
             fabric_env[key] = get_default()
