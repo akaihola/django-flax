@@ -289,24 +289,24 @@ def pull_repo():
 @task
 def update_python_packages():
     """Update main project repository and its Python dependencies"""
-    with NamedTemporaryFile() as tmp:
-        if os.path.isfile('requirements/production.txt'):
-            tmp.file.write(open('requirements/production.txt').read())
-        tmp.file.write('-e '
-                       'git+'
-                       'ssh://{repository}'
-                       '@{branch}'
-                       '#egg={project_name}\n'.format(
-                           repository=env.repository,
-                           branch=env.branch,
-                           project_name=env.project_name))
-        tmp.file.flush()
-        remote_name = (
-            '/tmp/{project_name}.requirements.production.txt'.format(
-                project_name=env.project_name))
-        put(tmp.name, remote_name)
-        pip.update_requirements(remote_name)
-        run('rm {0}'.format(remote_name))
+    remote_directory = ('/tmp/{project_name}'
+                        .format(project_name=env.project_name))
+    run('mkdir -p {remote_directory}'
+        .format(remote_directory=remote_directory))
+    put('requirements', remote_directory)
+    production_reqs = ('{remote_directory}/requirements/production.txt'
+                       .format(remote_directory=remote_directory))
+    project_req = ('-e '
+                   'git+'
+                   'ssh://{repository}'
+                   '@{branch}'
+                   '#egg={project_name}\n'.format(
+                       repository=env.repository,
+                       branch=env.branch,
+                       project_name=env.project_name))
+    append(production_reqs, project_req)
+    pip.update_requirements(production_reqs)
+    run('rm -rf {0}'.format(remote_directory))
 
 
 @task
