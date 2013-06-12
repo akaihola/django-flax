@@ -153,7 +153,8 @@ def clone_db():
 def manage(*args):
     with virtualenv():
         run('manage {0} --settings={{django_settings_module}}'
-            .format(' '.join(args)).format(**env))
+            .format(' '.join(args))
+            .format(django_settings_module=env.django_settings_module))
 
 
 @task
