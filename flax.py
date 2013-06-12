@@ -85,12 +85,12 @@ class Pip(object):
                                              repository))
 
     def update_repo(self, repository):
-        self.install(' -U {0} -e {1}'.format(env.pip_args,
-                                             repository))
+        self.install(' {0} -e {1}'.format(env.pip_args,
+                                          repository))
 
     def update_requirements(self, requirements_filepath):
-        self.install('-U {0} -r {1}'.format(env.pip_args,
-                                            requirements_filepath))
+        self.install('{0} -r {1}'.format(env.pip_args,
+                                         requirements_filepath))
 
 
 pip = Pip()
