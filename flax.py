@@ -33,6 +33,9 @@ class FlaxEnv(object):
     def get_default_db_name(self):
         return self.project_name
 
+    def get_default_db_options(self):
+        return ''
+
     def get_default_pip_args(self):
         return ''
 
@@ -131,7 +134,9 @@ def configure_postgresql():
 
 @task
 def create_db():
-    sudo('createdb {db_name} -O {db_user}'.format(**env), user='postgres')
+    sudo('createdb {env.db_name} -O {env.db_user} {env.db_options}'
+         .format(env=env),
+         user='postgres')
 
 
 @task
@@ -144,7 +149,8 @@ def clone_db():
     with settings(warn_only=True):
         local('dropdb {env.db_name}'.format(env=env))
         local('createuser -dRS {env.db_user}'.format(env=env))
-    local('createdb -O {env.db_user} {env.db_name}'.format(env=env))
+    local('createdb -O {env.db_user} {env.db_options} {env.db_name}'
+          .format(env=env))
     local('psql -U {env.db_user} {env.db_name} <{env.db_name}.sql'
           .format(env=env))
 
