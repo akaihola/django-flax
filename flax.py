@@ -33,10 +33,15 @@ class FlaxEnv(object):
     def get_default_db_name(self):
         return self.project_name
 
+    def get_default_db_options(self):
+        return ''
+
     def get_default_pip_args(self):
         return ''
 
     def __getattr__(self, key):
+        if key.startswith('get_default_'):
+            raise AttributeError('No default value for {0}'.format(key[12:]))
         if key not in fabric_env:
             get_default = getattr(self, 'get_default_{0}'.format(key))
             fabric_env[key] = get_default()
@@ -85,12 +90,12 @@ class Pip(object):
                                              repository))
 
     def update_repo(self, repository):
-        self.install(' -U {0} -e {1}'.format(env.pip_args,
-                                             repository))
+        self.install(' {0} -e {1}'.format(env.pip_args,
+                                          repository))
 
     def update_requirements(self, requirements_filepath):
-        self.install('-U {0} -r {1}'.format(env.pip_args,
-                                            requirements_filepath))
+        self.install('{0} -r {1}'.format(env.pip_args,
+                                         requirements_filepath))
 
 
 pip = Pip()
@@ -129,7 +134,9 @@ def configure_postgresql():
 
 @task
 def create_db():
-    sudo('createdb {db_name} -O {db_user}'.format(**env), user='postgres')
+    sudo('createdb {env.db_name} -O {env.db_user} {env.db_options}'
+         .format(env=env),
+         user='postgres')
 
 
 @task
@@ -143,7 +150,8 @@ def clone_db():
     with settings(warn_only=True):
         local('dropdb {env.db_name}'.format(env=env))
         local('createuser -dRS {env.db_user}'.format(env=env))
-    local('createdb -O {env.db_user} {env.db_name}'.format(env=env))
+    local('createdb -O {env.db_user} {env.db_options} {env.db_name}'
+          .format(env=env))
     local('psql -U {env.db_user} {env.db_name} <{env.db_name}.sql'
           .format(env=env))
 
@@ -152,7 +160,8 @@ def clone_db():
 def manage(*args):
     with virtualenv():
         run('manage {0} --settings={{django_settings_module}}'
-            .format(' '.join(args)).format(**env))
+            .format(' '.join(args))
+            .format(django_settings_module=env.django_settings_module))
 
 
 @task
@@ -290,24 +299,24 @@ def pull_repo():
 @task
 def update_python_packages():
     """Update main project repository and its Python dependencies"""
-    with NamedTemporaryFile() as tmp:
-        if os.path.isfile('requirements/production.txt'):
-            tmp.file.write(open('requirements/production.txt').read())
-        tmp.file.write('-e '
-                       'git+'
-                       'ssh://{repository}'
-                       '@{branch}'
-                       '#egg={project_name}\n'.format(
-                           repository=env.repository,
-                           branch=env.branch,
-                           project_name=env.project_name))
-        tmp.file.flush()
-        remote_name = (
-            '/tmp/{project_name}.requirements.production.txt'.format(
-                project_name=env.project_name))
-        put(tmp.name, remote_name)
-        pip.update_requirements(remote_name)
-        run('rm {0}'.format(remote_name))
+    remote_directory = ('/tmp/{project_name}'
+                        .format(project_name=env.project_name))
+    run('mkdir -p {remote_directory}'
+        .format(remote_directory=remote_directory))
+    put('requirements', remote_directory)
+    production_reqs = ('{remote_directory}/requirements/production.txt'
+                       .format(remote_directory=remote_directory))
+    project_req = ('-e '
+                   'git+'
+                   'ssh://{repository}'
+                   '@{branch}'
+                   '#egg={project_name}\n'.format(
+                       repository=env.repository,
+                       branch=env.branch,
+                       project_name=env.project_name))
+    append(production_reqs, project_req)
+    pip.update_requirements(production_reqs)
+    run('rm -rf {0}'.format(remote_directory))
 
 
 @task
