@@ -137,8 +137,9 @@ def clone_db():
     """Clones the production database to the development environment"""
     run('sudo -u postgres pg_dump -O {env.db_name}'
         ' >{env.site_root}/{env.db_name}.sql'.format(env=env))
-    local('rsync -z {env.host}:{env.site_root}/{env.db_name}.sql ./'
-          .format(env=env))
+    ssh_param = '-e "ssh -p {env.port}" '.format(env=env) if env.port else ''
+    local('rsync -z {ssh_param}{env.host}:{env.site_root}/{env.db_name}.sql ./'
+          .format(env=env, ssh_param=ssh_param))
     with settings(warn_only=True):
         local('dropdb {env.db_name}'.format(env=env))
         local('createuser -dRS {env.db_user}'.format(env=env))
