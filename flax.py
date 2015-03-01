@@ -142,7 +142,7 @@ def create_db():
 @task
 def clone_db():
     """Clones the production database to the development environment"""
-    run('sudo -u postgres pg_dump -O {env.db_name}'
+    run('pg_dump -O {env.db_name}'
         ' >{env.site_root}/{env.db_name}.sql'.format(env=env))
     ssh_param = '-e "ssh -p {env.port}" '.format(env=env) if env.port else ''
     local('rsync -z {ssh_param}{env.host}:{env.site_root}/{env.db_name}.sql ./'
